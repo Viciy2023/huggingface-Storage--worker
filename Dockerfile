@@ -54,12 +54,11 @@ RUN mkdir -p /root/.openclaw/extensions /root/.openclaw/skills /root/.openclaw/w
 RUN node /app/openclaw.mjs plugins install @openclaw-china/channels && \
     test -d /root/.openclaw/extensions/channels
 
-# 从 openclaw-china 插件目录中复制 wecom-app 专用 skill 到全局 skills 目录。
-# 这样运行期不需要再做补装，只做验证即可。
-RUN WECOM_SKILL_SRC="$(find /root/.openclaw/extensions/channels -type d -name wecom-app-ops | head -n 1)" && \
-    test -n "$WECOM_SKILL_SRC" && \
-    test -d "$WECOM_SKILL_SRC" && \
-    cp -a "$WECOM_SKILL_SRC" /root/.openclaw/skills/ && \
+# wecom-app-ops 不会随 @openclaw-china/channels 的 npm 发布产物一起带出来，
+# 因此这里改为直接从当前仓库内置的 skills/ 目录复制，避免依赖插件内部发布内容。
+COPY skills /opt/bootstrap-assets/skills
+RUN test -d /opt/bootstrap-assets/skills/wecom-app-ops && \
+    cp -a /opt/bootstrap-assets/skills/wecom-app-ops /root/.openclaw/skills/ && \
     test -d /root/.openclaw/skills/wecom-app-ops
 
 # 安装 agent-browser CLI，并在构建期直接做版本校验。
@@ -117,6 +116,7 @@ COPY sync-watch.sh /sync-watch.sh
 
 # 统一转换为 Unix 行尾并设置执行权限，避免 Windows 工作区提交后容器内脚本无法执行。
 RUN sed -i 's/\r$//' /opt/bootstrap-assets/openclaw.json && \
+    find /opt/bootstrap-assets/skills -type f -exec sed -i 's/\r$//' {} + && \
     find /bootstrap -type f -name "*.sh" -exec sed -i 's/\r$//' {} + && \
     sed -i 's/\r$//' /entrypoint.sh /sync-watch.sh && \
     chmod +x /entrypoint.sh /sync-watch.sh /bootstrap/*.sh
