@@ -48,10 +48,10 @@ RUN apt-get update -qq && \
 # 预创建 OpenClaw 工作目录，保证构建期安装插件/skills 时目录结构已经存在。
 RUN mkdir -p /root/.openclaw/extensions /root/.openclaw/skills /root/.openclaw/workspace /root/.openclaw/workspace/skills /root/.openclaw/cron
 
-# 安装 openclaw-china channels 插件并执行 china setup。
-# 这里使用 test -d 做硬校验，避免镜像构建成功但插件其实没落盘。
+# 安装 openclaw-china channels 插件。
+# 注意：`openclaw china setup` 是交互式向导，需要 TTY，不能在 HF Docker 构建阶段执行。
+# 渠道配置统一通过 openclaw.json 模板 + HF Secrets 在运行期注入。
 RUN node /app/openclaw.mjs plugins install @openclaw-china/channels && \
-    node /app/openclaw.mjs china setup && \
     test -d /root/.openclaw/extensions/openclaw-china
 
 # 从 openclaw-china 插件目录中复制 wecom-app 专用 skill 到全局 skills 目录。
