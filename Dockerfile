@@ -3,7 +3,7 @@
 # 构建期负责固定安装，运行期由 bootstrap 分阶段准备项目与校验
 # ============================================================
 
-FROM openclaw/openclaw:latest
+FROM ghcr.io/openclaw/openclaw:latest
 
 USER root
 
