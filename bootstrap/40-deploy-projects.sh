@@ -6,6 +6,9 @@ source /bootstrap/common.sh
 
 # 第四阶段：部署运行期依赖的外部项目。
 # 当前只保留 wechat-allauto-gzh 的公开仓库部署。
+# ClawEdit 在这套方案中默认不做 GitHub 在线安装，而是依赖 HF Buckets 恢复到：
+# - /root/.openclaw/extensions/clawedit
+# 所以下面不会出现“clawedit 正在安装”的日志，这是设计使然，不是漏执行。
 # 私有内容建议在本地子项目中按实际运行路径维护：
 # - workspace/
 # - cron/

@@ -49,19 +49,25 @@ log "=== 验证私有 Buckets 内容恢复情况 ==="
 # - /root/.openclaw/extensions/clawedit/
 # 启动时应优先从 HF Buckets 恢复同路径内容；如果缺失，只记录提示，不阻断公开模板启动。
 if [ -d "$OPENCLAW_DIR/extensions/clawedit" ]; then
-  log "✅ 已从 Buckets 恢复 extensions/clawedit 目录"
+  log "✅ 已从 Buckets 恢复 extensions/clawedit 目录: $OPENCLAW_DIR/extensions/clawedit"
+elif [ -d "$OPENCLAW_DIR/extensions/extensions/clawedit" ]; then
+  log "✅ 已从 Buckets 恢复 extensions/clawedit 目录（嵌套路径）: $OPENCLAW_DIR/extensions/extensions/clawedit"
 else
   warn "未检测到 extensions/clawedit；如果需要该能力，请先把私有预设上传到 HF Buckets 同路径"
 fi
 
 if [ -f "$OPENCLAW_DIR/cron/jobs.json" ]; then
-  log "✅ 已从 Buckets 恢复 cron/jobs.json"
+  log "✅ 已从 Buckets 恢复 cron/jobs.json: $OPENCLAW_DIR/cron/jobs.json"
+elif [ -f "$OPENCLAW_DIR/cron/cron/jobs.json" ]; then
+  log "✅ 已从 Buckets 恢复 cron/jobs.json（嵌套路径）: $OPENCLAW_DIR/cron/cron/jobs.json"
 else
   warn "未检测到 cron/jobs.json；如果需要定时任务，请先把私有 cron 配置上传到 HF Buckets 同路径"
 fi
 
 if [ -f "$OPENCLAW_DIR/workspace/AGENTS.md" ] || [ -f "$OPENCLAW_DIR/workspace/SOUL.md" ]; then
-  log "✅ 已从 Buckets 恢复 workspace 私有文档"
+  log "✅ 已从 Buckets 恢复 workspace 私有文档: $OPENCLAW_DIR/workspace"
+elif [ -f "$OPENCLAW_DIR/workspace/workspace/AGENTS.md" ] || [ -f "$OPENCLAW_DIR/workspace/workspace/SOUL.md" ]; then
+  log "✅ 已从 Buckets 恢复 workspace 私有文档（嵌套路径）: $OPENCLAW_DIR/workspace/workspace"
 else
   warn "未检测到 workspace 私有文档；如果需要完整工作区，请先把 workspace/ 上传到 HF Buckets 同路径"
 fi

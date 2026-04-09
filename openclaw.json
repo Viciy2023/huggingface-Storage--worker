@@ -215,6 +215,21 @@
       "verificationToken": "__FEISHU_VERIFICATION_TOKEN__",
       "encryptKey": "__FEISHU_ENCRYPT_KEY__",
       "sendMarkdownAsCard": true
+    },
+    "wechat-mp": {
+      "enabled": false,
+      "webhookPath": "/wechat-mp",
+      "appId": "__WECHAT_APP_ID__",
+      "appSecret": "__WECHAT_APP_SECRET__",
+      "token": "__WECHAT_TOKEN__",
+      "encodingAESKey": "__WECHAT_ENCODING_AES_KEY__",
+      "messageMode": "safe",
+      "replyMode": "active",
+      "activeDeliveryMode": "split",
+      "renderMarkdown": true,
+      "welcomeText": "",
+      "defaultAccount": "default",
+      "accounts": {}
     }
   }
 }
