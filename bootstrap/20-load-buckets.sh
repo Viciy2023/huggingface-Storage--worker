@@ -50,6 +50,20 @@ if [ "$BUCKET_HAS_DATA" = "yes" ]; then
       --local-dir "$OPENCLAW_DIR" >/dev/null 2>&1 && \
       log "✅ 已恢复 ${include_path}" || warn "恢复 ${include_path} 失败或为空"
   done
+
+  log "=== Buckets 恢复后的目录快照 ==="
+  if [ -d "$OPENCLAW_DIR/workspace" ]; then
+    log "workspace entries: $(find "$OPENCLAW_DIR/workspace" -mindepth 1 -maxdepth 2 | tr '\n' ' ' | cut -c 1-600)"
+  fi
+  if [ -d "$OPENCLAW_DIR/cron" ]; then
+    log "cron entries: $(find "$OPENCLAW_DIR/cron" -mindepth 1 -maxdepth 2 | tr '\n' ' ' | cut -c 1-600)"
+  fi
+  if [ -d "$OPENCLAW_DIR/extensions" ]; then
+    log "extensions entries: $(find "$OPENCLAW_DIR/extensions" -mindepth 1 -maxdepth 3 | tr '\n' ' ' | cut -c 1-800)"
+  fi
+  if [ -d "$OPENCLAW_DIR/skills" ]; then
+    log "skills entries: $(find "$OPENCLAW_DIR/skills" -mindepth 1 -maxdepth 2 | tr '\n' ' ' | cut -c 1-400)"
+  fi
 else
   # 如果 Buckets 里还没有数据，说明这是首次启动。
   # 这里不直接推送，而是先打标，等配置渲染完成后再推送首个快照。

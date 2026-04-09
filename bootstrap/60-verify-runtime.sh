@@ -53,7 +53,7 @@ if [ -d "$OPENCLAW_DIR/extensions/clawedit" ]; then
 elif [ -d "$OPENCLAW_DIR/extensions/extensions/clawedit" ]; then
   log "✅ 已从 Buckets 恢复 extensions/clawedit 目录（嵌套路径）: $OPENCLAW_DIR/extensions/extensions/clawedit"
 else
-  warn "未检测到 extensions/clawedit；如果需要该能力，请先把私有预设上传到 HF Buckets 同路径"
+  warn "未在常见恢复路径中检测到 extensions/clawedit；请结合前面的目录快照确认 HF Buckets 实际落盘路径"
 fi
 
 if [ -f "$OPENCLAW_DIR/cron/jobs.json" ]; then
@@ -61,7 +61,7 @@ if [ -f "$OPENCLAW_DIR/cron/jobs.json" ]; then
 elif [ -f "$OPENCLAW_DIR/cron/cron/jobs.json" ]; then
   log "✅ 已从 Buckets 恢复 cron/jobs.json（嵌套路径）: $OPENCLAW_DIR/cron/cron/jobs.json"
 else
-  warn "未检测到 cron/jobs.json；如果需要定时任务，请先把私有 cron 配置上传到 HF Buckets 同路径"
+  warn "未在常见恢复路径中检测到 cron/jobs.json；请结合前面的目录快照确认 HF Buckets 实际落盘路径"
 fi
 
 if [ -f "$OPENCLAW_DIR/workspace/AGENTS.md" ] || [ -f "$OPENCLAW_DIR/workspace/SOUL.md" ]; then
@@ -69,7 +69,7 @@ if [ -f "$OPENCLAW_DIR/workspace/AGENTS.md" ] || [ -f "$OPENCLAW_DIR/workspace/S
 elif [ -f "$OPENCLAW_DIR/workspace/workspace/AGENTS.md" ] || [ -f "$OPENCLAW_DIR/workspace/workspace/SOUL.md" ]; then
   log "✅ 已从 Buckets 恢复 workspace 私有文档（嵌套路径）: $OPENCLAW_DIR/workspace/workspace"
 else
-  warn "未检测到 workspace 私有文档；如果需要完整工作区，请先把 workspace/ 上传到 HF Buckets 同路径"
+  warn "未在常见恢复路径中检测到 workspace 私有文档；请结合前面的目录快照确认 HF Buckets 实际落盘路径"
 fi
 
 log "=== 验证 agent-browser ==="
