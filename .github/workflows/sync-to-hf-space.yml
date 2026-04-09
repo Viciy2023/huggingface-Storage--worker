@@ -12,7 +12,8 @@ jobs:
     permissions:
       contents: read
     env:
-      HF_SPACE_REPO: ${{ vars.HF_SPACE_REPO }}
+      HF_SPACE_REPO_VAR: ${{ vars.HF_SPACE_REPO }}
+      HF_SPACE_REPO_SECRET: ${{ secrets.HF_SPACE_REPO }}
 
     steps:
       - name: Checkout repository
@@ -26,14 +27,17 @@ jobs:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
         run: |
           set -euo pipefail
+          HF_SPACE_REPO="${HF_SPACE_REPO_VAR:-${HF_SPACE_REPO_SECRET:-}}"
           if [ -z "${HF_TOKEN:-}" ]; then
             echo "HF_TOKEN secret is required" >&2
             exit 1
           fi
           if [ -z "${HF_SPACE_REPO:-}" ]; then
-            echo "HF_SPACE_REPO repository variable is required, example: username/space-name" >&2
+            echo "HF_SPACE_REPO is required. Configure either a repository variable or a secret named HF_SPACE_REPO, example: username/space-name" >&2
             exit 1
           fi
+          echo "HF_SPACE_REPO source: ${HF_SPACE_REPO_VAR:+vars}${HF_SPACE_REPO_SECRET:+secrets}"
+          echo "HF_SPACE_REPO value present: yes"
 
       - name: Install Git LFS
         shell: bash
@@ -47,6 +51,7 @@ jobs:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
         run: |
           set -euo pipefail
+          HF_SPACE_REPO="${HF_SPACE_REPO_VAR:-${HF_SPACE_REPO_SECRET:-}}"
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git remote remove hf-space 2>/dev/null || true
