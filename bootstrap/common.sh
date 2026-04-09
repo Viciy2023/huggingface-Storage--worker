@@ -29,7 +29,9 @@ WECHAT_ALLAUTO_GZH_DIR="$OPENCLAW_DIR/workspace/wechat-allauto-gzh"
 WECHAT_CREDS_FILE="$WECHAT_ALLAUTO_GZH_DIR/credentials.json"
 
 # 构建期必须预装、运行期也必须通过校验的 ClawHub skills。
-CLAWHUB_SKILLS=(ddg-web-search n2-free-search tavily-search)
+# Tavily 在当前方案里只要求安装 Python SDK（tavily-python），
+# 不强制要求 ClawHub 内存在名为 tavily-search 的 skill。
+CLAWHUB_SKILLS=(ddg-web-search n2-free-search)
 
 # 首次启动标记通过临时文件在多个 bootstrap 子脚本之间传递，
 # 因为每个阶段脚本都是独立进程，不能依赖 shell 变量自动继承回写。

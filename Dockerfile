@@ -18,7 +18,8 @@ ENV PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=/usr/bin/chromium
 ENV PLAYWRIGHT_BROWSERS_PATH=/root/.cache/ms-playwright
 ENV PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1
 # 这里声明构建期必须预装的 ClawHub skills，后面的 RUN 会统一循环安装和校验。
-ENV CLAWHUB_SKILLS="ddg-web-search n2-free-search tavily-search"
+# Tavily 在这套方案里走 Python SDK（tavily-python），不是 ClawHub skill。
+ENV CLAWHUB_SKILLS="ddg-web-search n2-free-search"
 
 RUN ln -snf /usr/share/zoneinfo/Asia/Shanghai /etc/localtime && echo "Asia/Shanghai" > /etc/timezone
 
@@ -69,6 +70,7 @@ RUN echo "📦 Installing agent-browser CLI..." && \
 
 # 构建期安装 ClawHub skills，并为带 package.json 的 skill 补齐 Node 依赖。
 # 这里保留重试语义，但把网络安装前移到 build 阶段，避免容器启动时再联网装技能。
+# 注意：Tavily 在本方案中仅通过 tavily-python 提供能力，不再尝试安装不存在的 tavily-search skill。
 RUN set -e; \
     cd /root/.openclaw/workspace; \
     install_skill_with_retry() { \

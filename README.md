@@ -89,6 +89,11 @@ HF Space 收到 Git 更新后，会自动读取：
 4. ClawHub skills
 5. Python / Chromium / 同步依赖
 
+其中：
+
+1. ClawHub skills 当前只包含 `ddg-web-search` 和 `n2-free-search`
+2. Tavily 能力通过 `tavily-python` 提供，不依赖名为 `tavily-search` 的 ClawHub skill
+
 ## 5. 容器启动后的运行顺序
 
 容器启动后，执行入口：
