@@ -42,12 +42,12 @@ push_file() {
 
   error_log=$(mktemp)
 
-  huggingface-cli upload \
-    --repo-type "$BUCKET_TYPE" \
-    --token "$HF_TOKEN" \
+  hf_cli upload \
     "$BUCKET_REPO" \
     "$local_path" \
-    "$rel_path" >/dev/null 2>"$error_log" && \
+    "$rel_path" \
+    --repo-type "$BUCKET_TYPE" \
+    --token "$HF_TOKEN" >/dev/null 2>"$error_log" && \
     log "✅ 已同步：$rel_path" || { \
       warn "同步失败：$rel_path"; \
       sed 's/^/[sync-watch stderr] /' "$error_log" >&2 || true; \
@@ -77,12 +77,12 @@ push_dir() {
     rm -rf "$upload_dir/.git" "$upload_dir/node_modules" "$upload_dir/__pycache__" "$upload_dir/.venv"
   fi
 
-  huggingface-cli upload \
-    --repo-type "$BUCKET_TYPE" \
-    --token "$HF_TOKEN" \
+  hf_cli upload \
     "$BUCKET_REPO" \
     "$upload_dir" \
-    "$rel_dir" >/dev/null 2>"$error_log" && \
+    "$rel_dir" \
+    --repo-type "$BUCKET_TYPE" \
+    --token "$HF_TOKEN" >/dev/null 2>"$error_log" && \
     log "✅ 已同步目录：$rel_dir" || { \
       warn "目录同步失败：$rel_dir"; \
       sed 's/^/[sync-watch stderr] /' "$error_log" >&2 || true; \

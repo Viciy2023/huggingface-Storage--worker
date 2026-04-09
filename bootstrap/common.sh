@@ -39,6 +39,16 @@ FIRST_RUN="${FIRST_RUN:-false}"
 VERIFY_FAILURES=0
 FIRST_RUN_FLAG_FILE="/tmp/openclaw-first-run.flag"
 
+hf_cli() {
+  if command -v hf >/dev/null 2>&1; then
+    hf "$@"
+  elif command -v huggingface-cli >/dev/null 2>&1; then
+    huggingface-cli "$@"
+  else
+    fail "未找到 Hugging Face CLI（hf 或 huggingface-cli）"
+  fi
+}
+
 log() {
   echo "[$(date '+%H:%M:%S')] $*"
 }

@@ -13,33 +13,41 @@ if [ -z "${HF_TOKEN:-}" ]; then
   exit 0
 fi
 
-BUCKET_HAS_DATA=$(huggingface-cli download \
-  --repo-type "$BUCKET_TYPE" \
-  --token "$HF_TOKEN" \
-  "$BUCKET_REPO" \
-  openclaw.json \
-  --local-dir /tmp/hf-check 2>/dev/null && echo "yes" || echo "no")
+# 不再只用 openclaw.json 作为唯一探针，因为你可能先上传的是 workspace/cron/extensions。
+# 这里优先探测 workspace、cron、extensions 任一目录是否存在，再决定 Buckets 是否已有持久化数据。
+BUCKET_HAS_DATA="no"
+for probe_path in "workspace/*" "cron/*" "extensions/*" "skills/*" "openclaw.json"; do
+  if hf_cli download \
+    "$BUCKET_REPO" \
+    --repo-type "$BUCKET_TYPE" \
+    --token "$HF_TOKEN" \
+    --include "$probe_path" \
+    --local-dir /tmp/hf-check >/dev/null 2>&1; then
+    BUCKET_HAS_DATA="yes"
+    break
+  fi
+done
 
 if [ "$BUCKET_HAS_DATA" = "yes" ]; then
   log "✅ Buckets 中有持久化数据，开始恢复"
 
   # 先恢复 openclaw.json，再恢复 workspace / extensions / cron / skills。
   # 这样后续 bootstrap 阶段能直接基于恢复后的状态继续处理。
-  huggingface-cli download \
+  hf_cli download \
+    "$BUCKET_REPO" \
     --repo-type "$BUCKET_TYPE" \
     --token "$HF_TOKEN" \
-    "$BUCKET_REPO" \
     openclaw.json \
-    --local-dir "$OPENCLAW_DIR" 2>/dev/null && \
+    --local-dir "$OPENCLAW_DIR" >/dev/null 2>&1 && \
     log "✅ openclaw.json 已恢复" || warn "openclaw.json 恢复失败，继续使用镜像内文件"
 
   for include_path in "workspace/*" "extensions/*" "cron/*" "skills/*"; do
-    huggingface-cli download \
+    hf_cli download \
+      "$BUCKET_REPO" \
       --repo-type "$BUCKET_TYPE" \
       --token "$HF_TOKEN" \
-      "$BUCKET_REPO" \
       --include "$include_path" \
-      --local-dir "$OPENCLAW_DIR" 2>/dev/null && \
+      --local-dir "$OPENCLAW_DIR" >/dev/null 2>&1 && \
       log "✅ 已恢复 ${include_path}" || warn "恢复 ${include_path} 失败或为空"
   done
 else
