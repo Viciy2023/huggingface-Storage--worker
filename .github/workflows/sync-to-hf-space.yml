@@ -1,6 +1,7 @@
 name: Sync To HF Space
 
 on:
+  workflow_dispatch:
   push:
     branches:
       - main
