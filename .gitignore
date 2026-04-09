@@ -1,0 +1,31 @@
+# Node / package manager artifacts
+node_modules/
+**/node_modules/
+
+# Python artifacts
+__pycache__/
+**/__pycache__/
+.venv/
+venv/
+
+# Logs and runtime temp files
+*.log
+*.tmp
+*.swp
+*~
+*.lock
+
+# Local runtime state
+.last_outbound_ip
+
+# OS/editor files
+.DS_Store
+Thumbs.db
+
+# Project-specific runtime artifacts
+clawedit/运行日志.md
+
+# Private runtime presets kept locally for Buckets sync only
+workspace/
+cron/
+extensions/

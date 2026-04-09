@@ -1,0 +1,220 @@
+{
+  "gateway": {
+    "mode": "local",
+    "bind": "lan",
+    "auth": {
+      "mode": "token",
+      "token": "__GATEWAY_TOKEN__"
+    },
+    "controlUi": {
+      "dangerouslyDisableDeviceAuth": true,
+      "allowInsecureAuth": true,
+      "allowedOrigins": ["__PUBLIC_BASE_URL__"]
+    },
+    "http": {
+      "endpoints": {
+        "chatCompletions": {
+          "enabled": true
+        }
+      }
+    }
+  },
+  "cron": {
+    "enabled": true
+  },
+  "tools": {
+    "exec": {
+      "security": "full",
+      "ask": "off"
+    }
+  },
+  "models": {
+    "mode": "merge",
+    "providers": {
+      "__PRIMARY_PROVIDER_NAME__": {
+        "baseUrl": "__PRIMARY_PROVIDER_BASE_URL__",
+        "apiKey": "__PRIMARY_PROVIDER_API_KEY__",
+        "api": "__PRIMARY_PROVIDER_API__",
+        "models": [
+          {
+            "id": "__PRIMARY_MODEL_ID__",
+            "name": "__PRIMARY_MODEL_NAME__",
+            "reasoning": false,
+            "input": ["text"],
+            "cost": { "input": 0, "output": 0, "cacheRead": 0, "cacheWrite": 0 },
+            "contextWindow": 128000,
+            "maxTokens": 16384
+          }
+        ]
+      }
+    }
+  },
+  "agents": {
+    "defaults": {
+      "model": {
+        "primary": "__PRIMARY_PROVIDER_NAME__/__PRIMARY_MODEL_ID__"
+      },
+      "models": {
+        "__PRIMARY_PROVIDER_NAME__/__PRIMARY_MODEL_ID__": {}
+      },
+      "workspace": "/root/.openclaw/workspace",
+      "compaction": {
+        "mode": "safeguard"
+      },
+      "bootstrapMaxChars": 50000,
+      "maxConcurrent": 4,
+      "timeoutSeconds": 300,
+      "subagents": {
+        "maxConcurrent": 8
+      }
+    }
+  },
+  "messages": {
+    "ackReactionScope": "group-mentions"
+  },
+  "commands": {
+    "native": "auto",
+    "nativeSkills": "auto"
+  },
+  "session": {
+    "dmScope": "per-channel-peer"
+  },
+  "hooks": {
+    "internal": {
+      "enabled": true,
+      "entries": {
+        "boot-md": { "enabled": true },
+        "bootstrap-extra-files": { "enabled": true },
+        "command-logger": { "enabled": true },
+        "session-memory": { "enabled": true }
+      }
+    }
+  },
+  "plugins": {
+    "allow": ["channels", "clawedit"],
+    "entries": {
+      "channels": {
+        "enabled": true
+      },
+      "clawedit": {
+        "enabled": true,
+        "config": {
+          "defaultProvider": "img2img",
+          "fallback": {
+            "enabled": true,
+            "order": [
+              "img2img"
+            ]
+          },
+          "videoProvider": "img2video",
+          "fastProvider": "text2img",
+          "textToImageProviders": [
+            "text2img"
+          ],
+          "retry": {
+            "maxAttempts": 4,
+            "backoffMs": 1500
+          },
+          "providers": {
+            "text2img": {
+              "type": "openai-compatible",
+              "apiKey": "__TEXT2IMG_KEY__",
+              "model": "__TEXT2IMG_MODEL__",
+              "baseUrl": "__TEXT2IMG_BASE_URL__",
+              "timeoutMs": 120000
+            },
+            "img2img": {
+              "type": "openai-compatible",
+              "apiKey": "__IMG2IMG_KEY__",
+              "model": "__IMG2IMG_MODEL__",
+              "baseUrl": "__IMG2IMG_BASE_URL__",
+              "timeoutMs": 300000
+            },
+            "img2video": {
+              "type": "openai-compatible",
+              "apiKey": "__IMG2VIDEO_KEY__",
+              "model": "__IMG2VIDEO_MODEL__",
+              "baseUrl": "__IMG2VIDEO_BASE_URL__",
+              "timeoutMs": 120000
+            }
+          }
+        }
+      }
+    }
+  },
+  "channels": {
+    "wecom": {
+      "enabled": true,
+      "mode": "ws",
+      "botId": "__WECOM_WS_BOT_ID__",
+      "secret": "__WECOM_WS_SECRET__",
+      "publicBaseUrl": "__PUBLIC_BASE_URL__",
+      "heartbeatIntervalMs": 30000,
+      "reconnectInitialDelayMs": 2000,
+      "webhookPath": "/wecom",
+      "token": "__WECOM_TOKEN__",
+      "encodingAESKey": "__WECOM_AES_KEY__",
+      "corpId": "__WECOM_CORP_ID__",
+      "dmPolicy": "open",
+      "groupPolicy": "open",
+      "requireMention": true,
+      "allowFrom": ["*"]
+    },
+    "wecom-app": {
+      "enabled": true,
+      "webhookPath": "/wecom-app",
+      "token": "__WECOM_APP_TOKEN__",
+      "encodingAESKey": "__WECOM_APP_AES_KEY__",
+      "corpId": "__WECOM_CORP_ID__",
+      "corpSecret": "__WECOM_APP_SECRET__",
+      "agentId": 1000008,
+      "dmPolicy": "open",
+      "allowFrom": ["*"],
+      "apiBaseUrl": "__WECOM_APP_API_BASE_URL__",
+      "inboundMedia": {
+        "enabled": true,
+        "maxBytes": 10485760,
+        "keepDays": 7
+      },
+      "voiceTranscode": {
+        "enabled": true,
+        "prefer": "amr"
+      },
+      "asr": {
+        "enabled": true,
+        "appId": "__WECOM_APP_ASR_APP_ID__",
+        "secretId": "__WECOM_APP_ASR_SECRET_ID__",
+        "secretKey": "__WECOM_APP_ASR_SECRET_KEY__"
+      }
+    },
+    "qqbot": {
+      "enabled": true,
+      "appId": "__QQBOT_APP_ID__",
+      "clientSecret": "__QQBOT_CLIENT_SECRET__",
+      "markdownSupport": true,
+      "c2cMarkdownDeliveryMode": "proactive-all",
+      "autoSendLocalPathMedia": true,
+      "longTaskNoticeDelayMs": 30000,
+      "dmPolicy": "open",
+      "groupPolicy": "open",
+      "requireMention": true,
+      "allowFrom": ["*"],
+      "textChunkLimit": 1500,
+      "replyFinalOnly": false,
+      "asr": {
+        "enabled": true,
+        "appId": "__QQBOT_ASR_APP_ID__",
+        "secretId": "__QQBOT_ASR_SECRET_ID__",
+        "secretKey": "__QQBOT_ASR_SECRET_KEY__"
+      }
+    },
+    "feishu-china": {
+      "enabled": true,
+      "appId": "__FEISHU_APP_ID__",
+      "appSecret": "__FEISHU_APP_SECRET__",
+      "verificationToken": "__FEISHU_VERIFICATION_TOKEN__",
+      "encryptKey": "__FEISHU_ENCRYPT_KEY__",
+      "sendMarkdownAsCard": true
+    }
+  }
+}

@@ -1,0 +1,54 @@
+name: Sync To HF Space
+
+on:
+  push:
+    branches:
+      - main
+      - master
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    env:
+      HF_SPACE_REPO: ${{ vars.HF_SPACE_REPO }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Validate HF token secret
+        shell: bash
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+        run: |
+          set -euo pipefail
+          if [ -z "${HF_TOKEN:-}" ]; then
+            echo "HF_TOKEN secret is required" >&2
+            exit 1
+          fi
+          if [ -z "${HF_SPACE_REPO:-}" ]; then
+            echo "HF_SPACE_REPO repository variable is required, example: username/space-name" >&2
+            exit 1
+          fi
+
+      - name: Install Git LFS
+        shell: bash
+        run: |
+          set -euo pipefail
+          git lfs install
+
+      - name: Push repository to Hugging Face Space
+        shell: bash
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git remote remove hf-space 2>/dev/null || true
+          git remote add hf-space "https://user:${HF_TOKEN}@huggingface.co/spaces/${HF_SPACE_REPO}"
+          git push --force hf-space HEAD:main
