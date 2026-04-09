@@ -52,11 +52,11 @@ RUN mkdir -p /root/.openclaw/extensions /root/.openclaw/skills /root/.openclaw/w
 # 注意：`openclaw china setup` 是交互式向导，需要 TTY，不能在 HF Docker 构建阶段执行。
 # 渠道配置统一通过 openclaw.json 模板 + HF Secrets 在运行期注入。
 RUN node /app/openclaw.mjs plugins install @openclaw-china/channels && \
-    test -d /root/.openclaw/extensions/openclaw-china
+    test -d /root/.openclaw/extensions/channels
 
 # 从 openclaw-china 插件目录中复制 wecom-app 专用 skill 到全局 skills 目录。
 # 这样运行期不需要再做补装，只做验证即可。
-RUN WECOM_SKILL_SRC="/root/.openclaw/extensions/openclaw-china/extensions/wecom-app/skills/wecom-app-ops" && \
+RUN WECOM_SKILL_SRC="/root/.openclaw/extensions/channels/extensions/wecom-app/skills/wecom-app-ops" && \
     test -d "$WECOM_SKILL_SRC" && \
     cp -a "$WECOM_SKILL_SRC" /root/.openclaw/skills/ && \
     test -d /root/.openclaw/skills/wecom-app-ops
