@@ -53,8 +53,10 @@ jobs:
         run: |
           set -euo pipefail
           HF_SPACE_REPO="${HF_SPACE_REPO_VAR:-${HF_SPACE_REPO_SECRET:-}}"
+          echo "Preparing push to Hugging Face Space: ${HF_SPACE_REPO}"
+          echo "HF token present: yes"
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git remote remove hf-space 2>/dev/null || true
-          git remote add hf-space "https://user:${HF_TOKEN}@huggingface.co/spaces/${HF_SPACE_REPO}"
+          git remote add hf-space "https://hf_user:${HF_TOKEN}@huggingface.co/spaces/${HF_SPACE_REPO}"
           git push --force hf-space HEAD:main
