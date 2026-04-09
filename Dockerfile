@@ -56,7 +56,8 @@ RUN node /app/openclaw.mjs plugins install @openclaw-china/channels && \
 
 # 从 openclaw-china 插件目录中复制 wecom-app 专用 skill 到全局 skills 目录。
 # 这样运行期不需要再做补装，只做验证即可。
-RUN WECOM_SKILL_SRC="/root/.openclaw/extensions/channels/extensions/wecom-app/skills/wecom-app-ops" && \
+RUN WECOM_SKILL_SRC="$(find /root/.openclaw/extensions/channels -type d -name wecom-app-ops | head -n 1)" && \
+    test -n "$WECOM_SKILL_SRC" && \
     test -d "$WECOM_SKILL_SRC" && \
     cp -a "$WECOM_SKILL_SRC" /root/.openclaw/skills/ && \
     test -d /root/.openclaw/skills/wecom-app-ops
