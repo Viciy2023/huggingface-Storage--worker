@@ -23,7 +23,7 @@ BUCKET_TYPE="${BUCKET_TYPE:-dataset}"
 IP_RECORD="$OPENCLAW_DIR/.last_outbound_ip"
 
 # wechat-allauto-gzh 项目路径和凭证文件路径。
-WECHAT_ALLAUTO_GZH_REPO_URL="${WECHAT_ALLAUTO_GZH_REPO_URL:-https://github.com/example/wechat-allauto-gzh.git}"
+WECHAT_ALLAUTO_GZH_REPO_URL="${WECHAT_ALLAUTO_GZH_REPO_URL:-https://github.com/Viciy2023/wechat-allauto-gzh.git}"
 WECHAT_ALLAUTO_GZH_BRANCH="${WECHAT_ALLAUTO_GZH_BRANCH:-main}"
 WECHAT_ALLAUTO_GZH_DIR="$OPENCLAW_DIR/workspace/wechat-allauto-gzh"
 WECHAT_CREDS_FILE="$WECHAT_ALLAUTO_GZH_DIR/credentials.json"

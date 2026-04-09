@@ -63,10 +63,24 @@ RUN test -d /opt/bootstrap-assets/skills/wecom-app-ops && \
     test -d /root/.openclaw/skills/wecom-app-ops
 
 # 安装 agent-browser CLI，并在构建期直接做版本校验。
-# 如果这里失败，镜像构建就应该失败，而不是拖到运行期再发现。
+# 参考 huggingface-new worker 的已验证做法：
+# 1. 只安装公开存在的 agent-browser 包
+# 2. 在构建期执行 agent-browser install --with-deps
+# 3. 构建期直接验证可执行文件和版本
 RUN echo "📦 Installing agent-browser CLI..." && \
-    (npm install -g @openclaw/agent-browser || npm install -g agent-browser@latest) && \
-    agent-browser --version
+    if npm install -g agent-browser@latest; then \
+      echo "✅ agent-browser npm package installed"; \
+      echo "📦 Installing browser and dependencies..."; \
+      agent-browser install --with-deps; \
+      echo "✅ agent-browser browser installed"; \
+      echo "🔍 Verifying installation..."; \
+      which agent-browser; \
+      agent-browser --version; \
+      echo "✅ agent-browser CLI installed and verified successfully"; \
+    else \
+      echo "❌ agent-browser install failed"; \
+      exit 1; \
+    fi
 
 # 构建期安装 ClawHub skills，并为带 package.json 的 skill 补齐 Node 依赖。
 # 这里保留重试语义，但把网络安装前移到 build 阶段，避免容器启动时再联网装技能。

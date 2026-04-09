@@ -36,16 +36,24 @@ should_ignore_path() {
 push_file() {
   local local_path="$1"
   local rel_path="${local_path#$OPENCLAW_DIR/}"
+  local error_log
 
   [ -f "$local_path" ] || return 0
+
+  error_log=$(mktemp)
 
   huggingface-cli upload \
     --repo-type "$BUCKET_TYPE" \
     --token "$HF_TOKEN" \
     "$BUCKET_REPO" \
     "$local_path" \
-    "$rel_path" >/dev/null 2>&1 && \
-    log "✅ 已同步：$rel_path" || warn "同步失败：$rel_path"
+    "$rel_path" >/dev/null 2>"$error_log" && \
+    log "✅ 已同步：$rel_path" || { \
+      warn "同步失败：$rel_path"; \
+      sed 's/^/[sync-watch stderr] /' "$error_log" >&2 || true; \
+    }
+
+  rm -f "$error_log"
 }
 
 # 推送目录到 Buckets。
@@ -54,11 +62,13 @@ push_file() {
 push_dir() {
   local dir="$1"
   local rel_dir="${dir#$OPENCLAW_DIR/}"
+  local error_log
 
   [ -d "$dir" ] || return 0
 
   local upload_dir="$dir"
   local cleanup_temp=""
+  error_log=$(mktemp)
   if [ -d "$dir/.git" ] || [ -d "$dir/node_modules" ] || [ -d "$dir/__pycache__" ]; then
     cleanup_temp=$(mktemp -d)
     upload_dir="$cleanup_temp/$rel_dir"
@@ -72,12 +82,16 @@ push_dir() {
     --token "$HF_TOKEN" \
     "$BUCKET_REPO" \
     "$upload_dir" \
-    "$rel_dir" >/dev/null 2>&1 && \
-    log "✅ 已同步目录：$rel_dir" || warn "目录同步失败：$rel_dir"
+    "$rel_dir" >/dev/null 2>"$error_log" && \
+    log "✅ 已同步目录：$rel_dir" || { \
+      warn "目录同步失败：$rel_dir"; \
+      sed 's/^/[sync-watch stderr] /' "$error_log" >&2 || true; \
+    }
 
   if [ -n "$cleanup_temp" ]; then
     rm -rf "$cleanup_temp"
   fi
+  rm -f "$error_log"
 }
 
 # 执行一次全量推送。
