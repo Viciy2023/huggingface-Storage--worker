@@ -43,12 +43,33 @@ check_required_dir "$WECHAT_ALLAUTO_GZH_DIR/src/skills" "wechat-allauto-gzh Pyth
 check_required_file "$WECHAT_CREDS_FILE" "微信公众号凭证"
 
 log "=== 验证私有 Buckets 内容恢复情况 ==="
-# Buckets 恢复阶段已经输出了目录快照和关键文件存在性。
-# 这里不再重复猜测路径，只保留简短提醒，避免日志重复且互相矛盾。
-if [ -d "$OPENCLAW_DIR/extensions/clawedit" ] || [ -f "$OPENCLAW_DIR/cron/jobs.json" ] || [ -f "$OPENCLAW_DIR/workspace/AGENTS.md" ] || [ -f "$OPENCLAW_DIR/workspace/SOUL.md" ]; then
-  log "✅ 检测到至少一项私有 Buckets 内容已恢复到常见路径"
+# 公开 GitHub 仓库不提交这些私有文件，但本地子项目允许按实际运行路径维护它们：
+# - /root/.openclaw/workspace/*
+# - /root/.openclaw/cron/jobs.json
+# - /root/.openclaw/extensions/clawedit/
+# 启动时应优先从 HF Buckets 恢复同路径内容；如果缺失，只记录提示，不阻断公开模板启动。
+if [ -d "$OPENCLAW_DIR/extensions/clawedit" ]; then
+  log "✅ 已从 Buckets 恢复 extensions/clawedit 目录: $OPENCLAW_DIR/extensions/clawedit"
+elif [ -d "$OPENCLAW_DIR/extensions/extensions/clawedit" ]; then
+  log "✅ 已从 Buckets 恢复 extensions/clawedit 目录（嵌套路径）: $OPENCLAW_DIR/extensions/extensions/clawedit"
 else
-  warn "未在常见路径发现私有 Buckets 内容；请以上一阶段的目录快照为准检查实际落盘位置"
+  warn "未在常见恢复路径中检测到 extensions/clawedit；请结合前面的目录快照确认 HF Buckets 实际落盘路径"
+fi
+
+if [ -f "$OPENCLAW_DIR/cron/jobs.json" ]; then
+  log "✅ 已从 Buckets 恢复 cron/jobs.json: $OPENCLAW_DIR/cron/jobs.json"
+elif [ -f "$OPENCLAW_DIR/cron/cron/jobs.json" ]; then
+  log "✅ 已从 Buckets 恢复 cron/jobs.json（嵌套路径）: $OPENCLAW_DIR/cron/cron/jobs.json"
+else
+  warn "未在常见恢复路径中检测到 cron/jobs.json；请结合前面的目录快照确认 HF Buckets 实际落盘路径"
+fi
+
+if [ -f "$OPENCLAW_DIR/workspace/AGENTS.md" ] || [ -f "$OPENCLAW_DIR/workspace/SOUL.md" ]; then
+  log "✅ 已从 Buckets 恢复 workspace 私有文档: $OPENCLAW_DIR/workspace"
+elif [ -f "$OPENCLAW_DIR/workspace/workspace/AGENTS.md" ] || [ -f "$OPENCLAW_DIR/workspace/workspace/SOUL.md" ]; then
+  log "✅ 已从 Buckets 恢复 workspace 私有文档（嵌套路径）: $OPENCLAW_DIR/workspace/workspace"
+else
+  warn "未在常见恢复路径中检测到 workspace 私有文档；请结合前面的目录快照确认 HF Buckets 实际落盘路径"
 fi
 
 log "=== 验证 agent-browser ==="

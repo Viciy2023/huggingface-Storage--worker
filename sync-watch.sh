@@ -50,9 +50,11 @@ token = os.environ["HF_TOKEN"]
 repo = os.environ["BUCKET_REPO"]
 local_path = os.environ["SYNC_LOCAL_PATH"]
 rel_path = os.environ["SYNC_REL_PATH"]
+repo_type = os.environ.get("BUCKET_TYPE", "dataset")
 
 fs = HfFileSystem(token=token)
-fs.put(local_path, f"hf://buckets/{repo}/{rel_path}")
+prefix = {"dataset": "datasets", "space": "spaces", "model": "models"}.get(repo_type, "datasets")
+fs.put(local_path, f"hf://{prefix}/{repo}/{rel_path}")
 PY
   log "✅ 已同步：$rel_path"
 }
@@ -88,8 +90,10 @@ token = os.environ["HF_TOKEN"]
 repo = os.environ["BUCKET_REPO"]
 upload_dir = os.environ["SYNC_UPLOAD_DIR"]
 rel_dir = os.environ["SYNC_REL_DIR"]
+repo_type = os.environ.get("BUCKET_TYPE", "dataset")
 
 fs = HfFileSystem(token=token)
+prefix = {"dataset": "datasets", "space": "spaces", "model": "models"}.get(repo_type, "datasets")
 files = [
     path
     for path in glob.glob(os.path.join(upload_dir, "**", "*"), recursive=True)
@@ -98,7 +102,7 @@ files = [
 
 for local_path in files:
     rel_path = os.path.relpath(local_path, upload_dir).replace("\\", "/")
-    remote_path = f"hf://buckets/{repo}/{rel_dir}/{rel_path}" if rel_dir else f"hf://buckets/{repo}/{rel_path}"
+    remote_path = f"hf://{prefix}/{repo}/{rel_dir}/{rel_path}" if rel_dir else f"hf://{prefix}/{repo}/{rel_path}"
     fs.put(local_path, remote_path)
 PY
   log "✅ 已同步目录：$rel_dir"

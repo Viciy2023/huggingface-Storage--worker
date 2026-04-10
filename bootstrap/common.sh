@@ -39,6 +39,15 @@ FIRST_RUN="${FIRST_RUN:-false}"
 VERIFY_FAILURES=0
 FIRST_RUN_FLAG_FILE="/tmp/openclaw-first-run.flag"
 
+hf_repo_prefix() {
+  case "$BUCKET_TYPE" in
+    dataset) printf '%s' 'datasets' ;;
+    space) printf '%s' 'spaces' ;;
+    model) printf '%s' 'models' ;;
+    *) printf '%s' 'datasets' ;;
+  esac
+}
+
 hf_cli() {
   if command -v hf >/dev/null 2>&1; then
     hf "$@"
