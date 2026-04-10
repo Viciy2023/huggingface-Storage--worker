@@ -25,9 +25,14 @@ repo_type = os.environ.get("BUCKET_TYPE", "dataset")
 
 
 def to_relative_path(remote_file: str, repo_name: str) -> str:
+    repo_prefix = {
+        "dataset": "datasets",
+        "space": "spaces",
+        "model": "models",
+    }.get(repo_type, "datasets")
     prefixes = (
-        f"hf://buckets/{repo_name}/",
-        f"buckets/{repo_name}/",
+        f"hf://{repo_prefix}/{repo_name}/",
+        f"{repo_prefix}/{repo_name}/",
         f"/{repo_name}/",
         f"{repo_name}/",
     )
@@ -67,6 +72,8 @@ try:
             os.makedirs(os.path.dirname(local_file), exist_ok=True)
             fs.get(remote_file, local_file)
             restored += 1
+            if restored <= 20:
+                print(f"[bucket_restore] {remote_file} -> {local_file}", file=sys.stderr)
     print(str(restored))
 except Exception:
     print("0")
