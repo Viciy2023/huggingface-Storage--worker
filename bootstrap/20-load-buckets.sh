@@ -5,7 +5,8 @@ set -euo pipefail
 source /bootstrap/common.sh
 
 # 第二阶段：优先从 HF Buckets 恢复上一次运行留下的状态。
-# 这是 storage worker 最核心的职责，优先级高于 GitHub 默认文件预置。
+# 这里不再做“猜测式探测”，而是直接列举 Buckets 文件并逐个恢复，
+# 然后根据真实恢复结果判断是否属于首次启动。
 log "=== 从 HF Buckets 加载持久化数据 ==="
 
 if [ -z "${HF_TOKEN:-}" ]; then
@@ -13,7 +14,7 @@ if [ -z "${HF_TOKEN:-}" ]; then
   exit 0
 fi
 
-RESTORED_COUNT=$(python3 - <<'PY'
+RESTORE_OUTPUT=$(python3 - <<'PY'
 import os
 import sys
 from huggingface_hub import HfFileSystem
@@ -54,34 +55,52 @@ try:
         print("0")
         sys.exit(0)
 
-    files = fs.glob(f"{bucket_root}/**/*")
-    restored = 0
-    for remote_file in files:
-        if fs.isfile(remote_file):
-            rel_path = to_relative_path(remote_file, repo)
-            if not rel_path or rel_path.startswith("buckets/"):
-                continue
-            local_file = os.path.join(local_root, rel_path)
-            os.makedirs(os.path.dirname(local_file), exist_ok=True)
-            fs.get(remote_file, local_file)
-            restored += 1
-    print(str(restored))
+    restored = []
+    for remote_file in fs.glob(f"{bucket_root}/**/*"):
+        if not fs.isfile(remote_file):
+            continue
+        rel_path = to_relative_path(remote_file, repo)
+        if not rel_path or rel_path.startswith("buckets/"):
+            continue
+        local_file = os.path.join(local_root, rel_path)
+        os.makedirs(os.path.dirname(local_file), exist_ok=True)
+        fs.get(remote_file, local_file)
+        restored.append(rel_path)
+
+    print(str(len(restored)))
+    for rel_path in restored[:50]:
+        print(rel_path)
 except Exception:
     print("0")
 PY
 )
 
-if [ "$RESTORED_COUNT" -gt 0 ] 2>/dev/null; then
+RESTORED_COUNT=$(printf '%s' "$RESTORE_OUTPUT" | tr -d '\r' | head -n 1)
+
+if [[ "$RESTORED_COUNT" =~ ^[0-9]+$ ]] && [ "$RESTORED_COUNT" -gt 0 ]; then
   log "✅ Buckets 中有持久化数据，开始恢复"
-  if [ -f "$OPENCLAW_DIR/openclaw.json" ]; then
-    log "✅ openclaw.json 已恢复"
+
+  [ -f "$OPENCLAW_DIR/openclaw.json" ] && log "✅ openclaw.json 已恢复" || warn "openclaw.json 恢复失败，继续使用镜像内文件"
+
+  if [ -f "$OPENCLAW_DIR/workspace/AGENTS.md" ] || [ -f "$OPENCLAW_DIR/workspace/SOUL.md" ]; then
+    log "✅ workspace 私有文档已恢复"
   else
-    warn "openclaw.json 恢复失败，继续使用镜像内文件"
+    warn "workspace 私有文档未恢复到常见路径"
   fi
-  [ -d "$OPENCLAW_DIR/workspace" ] && log "✅ 已恢复 workspace/*" || warn "恢复 workspace/* 失败或为空"
-  [ -d "$OPENCLAW_DIR/extensions" ] && log "✅ 已恢复 extensions/*" || warn "恢复 extensions/* 失败或为空"
-  [ -d "$OPENCLAW_DIR/cron" ] && log "✅ 已恢复 cron/*" || warn "恢复 cron/* 失败或为空"
-  [ -d "$OPENCLAW_DIR/skills" ] && log "✅ 已恢复 skills/*" || warn "恢复 skills/* 失败或为空"
+
+  if [ -f "$OPENCLAW_DIR/cron/jobs.json" ]; then
+    log "✅ cron/jobs.json 已恢复"
+  else
+    warn "cron/jobs.json 未恢复到常见路径"
+  fi
+
+  if [ -d "$OPENCLAW_DIR/extensions/clawedit" ]; then
+    log "✅ extensions/clawedit 已恢复"
+  else
+    warn "extensions/clawedit 未恢复到常见路径"
+  fi
+
+  [ -d "$OPENCLAW_DIR/skills" ] && log "✅ skills 目录已恢复/存在" || warn "skills 目录恢复失败或为空"
 
   log "=== Buckets 恢复后的目录快照 ==="
   if [ -d "$OPENCLAW_DIR/workspace" ]; then
@@ -97,14 +116,10 @@ if [ "$RESTORED_COUNT" -gt 0 ] 2>/dev/null; then
     log "skills entries: $(find "$OPENCLAW_DIR/skills" -mindepth 1 -maxdepth 3 | tr '\n' ' ' | cut -c 1-800)"
   fi
 else
-  # 如果 Buckets 里还没有数据，说明这是首次启动。
-  # 这里不直接推送，而是先打标，等配置渲染完成后再推送首个快照。
   warn "Buckets 中暂无数据，将使用镜像内默认文件并标记为首次启动"
   FIRST_RUN=true
   touch "$FIRST_RUN_FLAG_FILE"
 fi
-
-rm -rf /tmp/hf-check
 
 if [ -f "$FIRST_RUN_FLAG_FILE" ]; then
   log "=== 首次启动将于配置渲染完成后推送初始快照 ==="
