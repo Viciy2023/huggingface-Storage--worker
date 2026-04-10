@@ -36,24 +36,25 @@ should_ignore_path() {
 push_file() {
   local local_path="$1"
   local rel_path="${local_path#$OPENCLAW_DIR/}"
-  local error_log
 
   [ -f "$local_path" ] || return 0
 
-  error_log=$(mktemp)
+  export SYNC_LOCAL_PATH="$local_path"
+  export SYNC_REL_PATH="$rel_path"
 
-  hf_cli upload \
-    "$BUCKET_REPO" \
-    "$local_path" \
-    "$rel_path" \
-    --repo-type "$BUCKET_TYPE" \
-    --token "$HF_TOKEN" >/dev/null 2>"$error_log" && \
-    log "✅ 已同步：$rel_path" || { \
-      warn "同步失败：$rel_path"; \
-      sed 's/^/[sync-watch stderr] /' "$error_log" >&2 || true; \
-    }
+  python3 - <<'PY'
+import os
+from huggingface_hub import HfFileSystem
 
-  rm -f "$error_log"
+token = os.environ["HF_TOKEN"]
+repo = os.environ["BUCKET_REPO"]
+local_path = os.environ["SYNC_LOCAL_PATH"]
+rel_path = os.environ["SYNC_REL_PATH"]
+
+fs = HfFileSystem(token=token)
+fs.put(local_path, f"hf://buckets/{repo}/{rel_path}")
+PY
+  log "✅ 已同步：$rel_path"
 }
 
 # 推送目录到 Buckets。
@@ -62,13 +63,11 @@ push_file() {
 push_dir() {
   local dir="$1"
   local rel_dir="${dir#$OPENCLAW_DIR/}"
-  local error_log
 
   [ -d "$dir" ] || return 0
 
   local upload_dir="$dir"
   local cleanup_temp=""
-  error_log=$(mktemp)
   if [ -d "$dir/.git" ] || [ -d "$dir/node_modules" ] || [ -d "$dir/__pycache__" ]; then
     cleanup_temp=$(mktemp -d)
     upload_dir="$cleanup_temp/$rel_dir"
@@ -77,21 +76,36 @@ push_dir() {
     rm -rf "$upload_dir/.git" "$upload_dir/node_modules" "$upload_dir/__pycache__" "$upload_dir/.venv"
   fi
 
-  hf_cli upload \
-    "$BUCKET_REPO" \
-    "$upload_dir" \
-    "$rel_dir" \
-    --repo-type "$BUCKET_TYPE" \
-    --token "$HF_TOKEN" >/dev/null 2>"$error_log" && \
-    log "✅ 已同步目录：$rel_dir" || { \
-      warn "目录同步失败：$rel_dir"; \
-      sed 's/^/[sync-watch stderr] /' "$error_log" >&2 || true; \
-    }
+  export SYNC_UPLOAD_DIR="$upload_dir"
+  export SYNC_REL_DIR="$rel_dir"
+
+  python3 - <<'PY'
+import glob
+import os
+from huggingface_hub import HfFileSystem
+
+token = os.environ["HF_TOKEN"]
+repo = os.environ["BUCKET_REPO"]
+upload_dir = os.environ["SYNC_UPLOAD_DIR"]
+rel_dir = os.environ["SYNC_REL_DIR"]
+
+fs = HfFileSystem(token=token)
+files = [
+    path
+    for path in glob.glob(os.path.join(upload_dir, "**", "*"), recursive=True)
+    if os.path.isfile(path)
+]
+
+for local_path in files:
+    rel_path = os.path.relpath(local_path, upload_dir).replace("\\", "/")
+    remote_path = f"hf://buckets/{repo}/{rel_dir}/{rel_path}" if rel_dir else f"hf://buckets/{repo}/{rel_path}"
+    fs.put(local_path, remote_path)
+PY
+  log "✅ 已同步目录：$rel_dir"
 
   if [ -n "$cleanup_temp" ]; then
     rm -rf "$cleanup_temp"
   fi
-  rm -f "$error_log"
 }
 
 # 执行一次全量推送。

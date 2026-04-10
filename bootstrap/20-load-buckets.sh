@@ -13,73 +13,88 @@ if [ -z "${HF_TOKEN:-}" ]; then
   exit 0
 fi
 
-restore_bucket_patterns() {
-  local destination_dir="$1"
-  shift
-  local patterns=("$@")
-
-  python3 - <<'PY'
+RESTORED_COUNT=$(python3 - <<'PY'
 import os
 import sys
-from huggingface_hub import snapshot_download
+from huggingface_hub import HfFileSystem
 
-repo_id = os.environ["BUCKET_REPO"]
-repo_type = os.environ["BUCKET_TYPE"]
-token = os.environ["HF_TOKEN"]
-destination_dir = os.environ["RESTORE_DESTINATION_DIR"]
-patterns = [p for p in os.environ.get("RESTORE_PATTERNS", "").split("\n") if p]
+token = os.environ.get("HF_TOKEN", "")
+repo = os.environ.get("BUCKET_REPO", "")
+local_root = os.environ.get("OPENCLAW_STATE_DIR", "/root/.openclaw")
 
-snapshot_download(
-    repo_id=repo_id,
-    repo_type=repo_type,
-    token=token,
-    local_dir=destination_dir,
-    allow_patterns=patterns,
-)
+
+def to_relative_path(remote_file: str, repo_name: str) -> str:
+    prefixes = (
+        f"hf://buckets/{repo_name}/",
+        f"buckets/{repo_name}/",
+        f"/{repo_name}/",
+        f"{repo_name}/",
+    )
+    rel_path = remote_file
+    while True:
+        for prefix in prefixes:
+            if rel_path.startswith(prefix):
+                rel_path = rel_path[len(prefix):]
+                break
+        else:
+            break
+    return rel_path.lstrip("/")
+
+
+if not token or not repo:
+    print("0")
+    sys.exit(0)
+
+fs = HfFileSystem(token=token)
+bucket_root = f"hf://buckets/{repo}"
+os.makedirs(local_root, exist_ok=True)
+
+try:
+    if not fs.exists(bucket_root):
+        print("0")
+        sys.exit(0)
+
+    files = fs.glob(f"{bucket_root}/**/*")
+    restored = 0
+    for remote_file in files:
+        if fs.isfile(remote_file):
+            rel_path = to_relative_path(remote_file, repo)
+            if not rel_path or rel_path.startswith("buckets/"):
+                continue
+            local_file = os.path.join(local_root, rel_path)
+            os.makedirs(os.path.dirname(local_file), exist_ok=True)
+            fs.get(remote_file, local_file)
+            restored += 1
+    print(str(restored))
+except Exception:
+    print("0")
 PY
-}
+)
 
-# 不再只用 openclaw.json 作为唯一探针，因为你可能先上传的是 workspace/cron/extensions。
-# 这里优先探测 workspace、cron、extensions 任一目录是否存在，再决定 Buckets 是否已有持久化数据。
-BUCKET_HAS_DATA="no"
-for probe_path in "workspace/*" "cron/*" "extensions/*" "skills/*" "openclaw.json"; do
-  export RESTORE_DESTINATION_DIR="/tmp/hf-check"
-  export RESTORE_PATTERNS="$probe_path"
-  if restore_bucket_patterns "/tmp/hf-check" "$probe_path" >/dev/null 2>&1; then
-    BUCKET_HAS_DATA="yes"
-    break
-  fi
-done
-
-if [ "$BUCKET_HAS_DATA" = "yes" ]; then
+if [ "$RESTORED_COUNT" -gt 0 ] 2>/dev/null; then
   log "✅ Buckets 中有持久化数据，开始恢复"
-
-  # 先恢复 openclaw.json，再恢复 workspace / extensions / cron / skills。
-  # 这样后续 bootstrap 阶段能直接基于恢复后的状态继续处理。
-  export RESTORE_DESTINATION_DIR="$OPENCLAW_DIR"
-  export RESTORE_PATTERNS="openclaw.json"
-  restore_bucket_patterns "$OPENCLAW_DIR" "openclaw.json" >/dev/null 2>&1 && \
-    log "✅ openclaw.json 已恢复" || warn "openclaw.json 恢复失败，继续使用镜像内文件"
-
-  for include_path in "workspace/*" "extensions/*" "cron/*" "skills/*"; do
-    export RESTORE_DESTINATION_DIR="$OPENCLAW_DIR"
-    export RESTORE_PATTERNS="$include_path"
-    restore_bucket_patterns "$OPENCLAW_DIR" "$include_path" >/dev/null 2>&1 && \
-      log "✅ 已恢复 ${include_path}" || warn "恢复 ${include_path} 失败或为空"
-  done
+  if [ -f "$OPENCLAW_DIR/openclaw.json" ]; then
+    log "✅ openclaw.json 已恢复"
+  else
+    warn "openclaw.json 恢复失败，继续使用镜像内文件"
+  fi
+  [ -d "$OPENCLAW_DIR/workspace" ] && log "✅ 已恢复 workspace/*" || warn "恢复 workspace/* 失败或为空"
+  [ -d "$OPENCLAW_DIR/extensions" ] && log "✅ 已恢复 extensions/*" || warn "恢复 extensions/* 失败或为空"
+  [ -d "$OPENCLAW_DIR/cron" ] && log "✅ 已恢复 cron/*" || warn "恢复 cron/* 失败或为空"
+  [ -d "$OPENCLAW_DIR/skills" ] && log "✅ 已恢复 skills/*" || warn "恢复 skills/* 失败或为空"
 
   log "=== Buckets 恢复后的目录快照 ==="
   if [ -d "$OPENCLAW_DIR/workspace" ]; then
-    log "workspace entries: $(find "$OPENCLAW_DIR/workspace" -mindepth 1 -maxdepth 2 | tr '\n' ' ' | cut -c 1-600)"
+    log "workspace entries: $(find "$OPENCLAW_DIR/workspace" -mindepth 1 -maxdepth 3 | tr '\n' ' ' | cut -c 1-1200)"
   fi
   if [ -d "$OPENCLAW_DIR/cron" ]; then
-    log "cron entries: $(find "$OPENCLAW_DIR/cron" -mindepth 1 -maxdepth 2 | tr '\n' ' ' | cut -c 1-600)"
+    log "cron entries: $(find "$OPENCLAW_DIR/cron" -mindepth 1 -maxdepth 3 | tr '\n' ' ' | cut -c 1-1200)"
   fi
   if [ -d "$OPENCLAW_DIR/extensions" ]; then
-    log "extensions entries: $(find "$OPENCLAW_DIR/extensions" -mindepth 1 -maxdepth 3 | tr '\n' ' ' | cut -c 1-800)"
+    log "extensions entries: $(find "$OPENCLAW_DIR/extensions" -mindepth 1 -maxdepth 4 | tr '\n' ' ' | cut -c 1-1600)"
   fi
   if [ -d "$OPENCLAW_DIR/skills" ]; then
-    log "skills entries: $(find "$OPENCLAW_DIR/skills" -mindepth 1 -maxdepth 2 | tr '\n' ' ' | cut -c 1-400)"
+    log "skills entries: $(find "$OPENCLAW_DIR/skills" -mindepth 1 -maxdepth 3 | tr '\n' ' ' | cut -c 1-800)"
   fi
 else
   # 如果 Buckets 里还没有数据，说明这是首次启动。
